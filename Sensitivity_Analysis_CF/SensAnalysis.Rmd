@@ -1,0 +1,160 @@
+---
+title: "MIMICS_CN_SensAnalysis"
+author: "Colin G. Finlay"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Setup
+
+```{r Setup}
+# Clear environment
+rm(list=ls())
+
+#use to set working directory 
+knitr::opts_knit$set(root.dir="~/GitHub/MIMICS-CN-for-publication/Sensitivity_Analysis_CF/")
+```
+
+```{r Load packages}
+require("tidyverse")
+```
+
+```{r Load data}
+# Original model outputs:
+outputs_orig <- read.csv("./data/MIMICS_SSoutput_ORIGINAL.csv")
+
+# Model outputs with 100x lignin input for CWT:
+outputs_Lig <- read.csv("./data/MIMICS_SSoutput_Lignin_Test_OE_20261022.csv")
+
+# Model outputs with 100x ANPP input for CWT:
+outputs_ANPP <- read.csv("./data/MIMICS_SSoutput_ANPP_Test_CF_20261022.csv")
+
+# Model outputs with 2x lignin input for CWT:
+outputs_Lig_2x <- read.csv("./data/MIMICS_SSoutput_Ligg_2x.csv")
+
+# Model outputs with 2x ANPP input for CWT:
+outputs_ANPP_2x <- read.csv("./data/MIMICS_SSoutput_ANPP_2x.csv")
+```
+
+```{r}
+vars <- c("SOMp","SOMc","SOMa","Resp")
+
+comb <- bind_rows(
+  mutate(outputs_orig, Scenario = "Original"),
+  mutate(outputs_Lig,  Scenario = "Lignin x100"),
+  mutate(outputs_ANPP, Scenario = "ANPP x100")) |>
+  select(Site, Scenario, all_of(vars)) |>
+  pivot_longer(all_of(vars), names_to = "Variable") |>
+  mutate(Variable = factor(Variable, vars))
+
+change <- comb |>
+  pivot_wider(names_from = Scenario, values_from = value) |>
+  pivot_longer(c(`Lignin x100`, `ANPP x100`), names_to = "Scenario", values_to = "new") |>
+  mutate(pct_change = 100 * (new - Original) / Original,
+         Scenario = factor(Scenario, c("Lignin x100", "ANPP x100")))
+
+# Fig 1: raw values at CWT
+cwt <- comb |> filter(Site == "CWT") |>
+  mutate(Scenario = factor(Scenario, c("Original", "Lignin x100", "ANPP x100")))
+ggplot(cwt, aes(Scenario, value, fill = Scenario)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~Variable, scales = "free_y") +
+  labs(title = "CWT outputs under adjusted inputs", y = "Model output", x = NULL)
+
+# Fig 2: percent change at CWT
+ggplot(filter(change, Site == "CWT"), aes(Scenario, pct_change, fill = Scenario)) +
+  geom_hline(yintercept = 0) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = sprintf("%+.0f%%", pct_change),
+                vjust = ifelse(pct_change >= 0, -0.3, 1.2))) +
+  facet_wrap(~Variable, scales = "free_y") +
+  scale_y_continuous(expand = expansion(mult = 0.15)) +
+  labs(title = "Percent change from original at CWT", y = "% change", x = NULL)
+```
+
+```{r}
+comb <- bind_rows(
+  mutate(outputs_orig, Scenario = "Original"),
+  mutate(outputs_Lig_2x,  Scenario = "Lignin x2"),
+  mutate(outputs_ANPP_2x, Scenario = "ANPP x2")) |>
+  select(Site, Scenario, all_of(vars)) |>
+  pivot_longer(all_of(vars), names_to = "Variable") |>
+  mutate(Variable = factor(Variable, vars))
+
+change <- comb |>
+  pivot_wider(names_from = Scenario, values_from = value) |>
+  pivot_longer(c(`Lignin x2`, `ANPP x2`), names_to = "Scenario", values_to = "new") |>
+  mutate(pct_change = 100 * (new - Original) / Original,
+         Scenario = factor(Scenario, c("Lignin x2", "ANPP x2")))
+
+# Fig 3: raw values at CWT
+cwt <- comb |> filter(Site == "CWT") |>
+  mutate(Scenario = factor(Scenario, c("Original", "Lignin x2", "ANPP x2")))
+ggplot(cwt, aes(Scenario, value, fill = Scenario)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~Variable, scales = "free_y") +
+  labs(title = "CWT outputs under adjusted inputs", y = "Model output", x = NULL)
+
+# Fig 4: percent change at CWT
+ggplot(filter(change, Site == "CWT"), aes(Scenario, pct_change, fill = Scenario)) +
+  geom_hline(yintercept = 0) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = sprintf("%+.0f%%", pct_change),
+                vjust = ifelse(pct_change >= 0, -0.3, 1.2))) +
+  facet_wrap(~Variable, scales = "free_y") +
+  scale_y_continuous(expand = expansion(mult = 0.15)) +
+  labs(title = "Percent change from original at CWT", y = "% change", x = NULL)
+```
+
+```{r}
+comb <- bind_rows(
+  mutate(outputs_orig, Scenario = "Original"),
+  mutate(outputs_Lig_2x,  Scenario = "Lignin x2"),
+  mutate(outputs_Lig,  Scenario = "Lignin x100"),
+  mutate(outputs_ANPP_2x, Scenario = "ANPP x2"),
+  mutate(outputs_ANPP, Scenario = "ANPP x100")) |>
+  select(Site, Scenario, all_of(vars)) |>
+  pivot_longer(all_of(vars), names_to = "Variable") |>
+  mutate(Variable = factor(Variable, vars))
+
+change <- comb |>
+  pivot_wider(names_from = Scenario, values_from = value) |>
+  pivot_longer(c(`Lignin x2`, `Lignin x100`, `ANPP x2`, `ANPP x100`),
+               names_to = "Scenario", values_to = "new") |>
+  mutate(pct_change = 100 * (new - Original) / Original,
+         Scenario = factor(Scenario, c("Lignin x2", "Lignin x100", "ANPP x2", "ANPP x100")))
+
+# Fig 5: raw values at CWT
+cwt <- comb |> filter(Site == "CWT") |>
+  mutate(Scenario = factor(Scenario, c("Original", "Lignin x2", "Lignin x100", "ANPP x2", "ANPP x100")))
+
+
+Fig5 <- ggplot(cwt, aes(Scenario, value, fill = Scenario)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~Variable, scales = "free_y") +
+  labs(title = "CWT outputs under adjusted inputs", y = "Model output", x = NULL)+
+    #Remove plot grid lines
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+Fig5
+
+#ggsave("./figures/CWT_outputs.png", plot=Fig5, device="png", path=NULL, scale=1, width=18.5, height=20, units = "cm", dpi=600, limitsize=TRUE, bg="white")
+
+# Fig 6: percent change at CWT
+Fig6 <- ggplot(filter(change, Site == "CWT"), aes(Scenario, pct_change, fill = Scenario)) +
+  geom_hline(yintercept = 0) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = sprintf("%+.0f%%", pct_change),
+                vjust = ifelse(pct_change >= 0, -0.3, 1.2))) +
+  facet_wrap(~Variable, scales = "free_y") +
+  scale_y_continuous(expand = expansion(mult = 0.15)) +
+  labs(title = "Percent change from original at CWT", y = "% change", x = NULL)+
+    #Remove plot grid lines
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+Fig6
+
+#ggsave("./figures/CWT_percentChanges.png", plot=Fig6, device="png", path=NULL, scale=1, width=18.5, height=20, units = "cm", dpi=600, limitsize=TRUE, bg="white")
+```
+
+
